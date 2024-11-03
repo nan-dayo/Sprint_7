@@ -1,129 +1,103 @@
-import io.qameta.allure.Step;
-import io.restassured.RestAssured;
+import io.qameta.allure.junit4.DisplayName;
 import io.restassured.response.Response;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-public class CreateCourierTest {
 
-    private Integer courierId;
-    Steps step = new Steps();
+public class CreateCourierTest extends BaseURI{
 
-    @Before
-    public void setUp() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru";
-    }
+    Integer courierId;
+
+    private final CourierSteps steps = new CourierSteps();
 
     @After
     public void tearDown() {
         if (courierId != null) {
-            step.deleteCourier(courierId);
+            steps.deleteCourier(courierId);
         }
     }
 
     @Test
-    @Step("Проверка успешного создания курьера")
-    public void testCreateCourier() {
-        courierId = step.createCourier("meowmeow", "1234", "kitty");
-    }
-
-    @Test
-    @Step("Проверка успешного ответа и поля ok: true при создании курьера")
-    public void testCreateCourierResponseOk() {
-        String login = "auuuuf";
+    @DisplayName("Успешное создание курьера и получение ok: true в ответе")
+    public void testCreateCourierSuccess() {
+        String login = "auuuuf"; // Уникальный логин
         String password = "1234";
         String firstName = "doggy";
 
-        courierId = step.createCourier(login, password, firstName);
-        given()
-                .header("Content-type", "application/json")
-                .body("{\n" +
-                        "    \"login\": \"" + login + "\",\n" +
-                        "    \"password\": \"" + password + "\",\n" +
-                        "    \"firstName\": \"" + firstName + "\"\n" +
-                        "}")
-                .when()
-                .post("/api/v1/courier/login")
-                .then()
-                .statusCode(200)
-                .body("id", is(courierId));
+
+        Response response = steps.createCourier(login, password, firstName);
+        response.then().statusCode(201).body("ok", is(true));
+
+        Response loginResponse = steps.loginCourier(login, password);
+        courierId = loginResponse.jsonPath().getInt("id");
     }
 
+
     @Test
-    @Step("Проверка ошибки при создании курьера с уже существующим логином")
-    public void testCannotCreateCourierWithSameLogin() {
+    @DisplayName("Ошибка при создании курьера с существующим логином")
+    public void testCreateCourierDuplicateLogin() {
         String login = "jayjayyy";
         String password = "1234";
         String firstName = "jackie";
 
-        courierId = step.createCourier(login, password, firstName);
-        given()
-                .header("Content-type", "application/json")
-                .body("{\n" +
-                        "    \"login\": \"" + login + "\",\n" +
-                        "    \"password\": \"" + password + "\",\n" +
-                        "    \"firstName\": \"" + firstName + "\"\n" +
-                        "}")
-                .when()
-                .post("/api/v1/courier")
-                .then()
-                .statusCode(409)
+        steps.createCourier(login, password, firstName);
+
+        Response loginResponse = steps.loginCourier(login, password);
+        courierId = loginResponse.jsonPath().getInt("id");
+
+        Response secondResponse = steps.createCourier(login, password, firstName);
+        secondResponse.then()
+                .statusCode(409) // Ожидаем статус 409
                 .body("message", equalTo("Этот логин уже используется"));
     }
 
+
     @Test
-    @Step("Проверка ошибки при создании курьера без обязательного поля логина")
+    @DisplayName("Проверка ошибки при создании курьера без обязательного поля логина")
     public void testCreateCourierWithoutLogin() {
-        given()
-                .header("Content-type", "application/json")
-                .body("{\n" +
-                        "    \"password\": \"1234\",\n" +
-                        "    \"firstName\": \"doggy\"\n" +
-                        "}")
-                .when()
-                .post("/api/v1/courier")
+        String login = null;
+        String password = "1234";
+        String firstName = "doggy";
+
+        Response response = steps.createCourier(login, password, firstName);
+
+        response
                 .then()
                 .statusCode(400)
                 .body("message", equalTo("Недостаточно данных для создания учетной записи"));
     }
 
     @Test
-    @Step("Проверка ошибки при создании курьера без обязательного поля пароля")
+    @DisplayName("Проверка ошибки при создании курьера без обязательного поля пароля")
     public void testCreateCourierWithoutPassword(){
-        given()
-                .header("Content-type", "application/json")
-                .body("{\n" +
-                        "    \"login\": \"affff\",\n" +
-                        "    \"firstName\": \"Boris\"\n" +
-                        "}")
-                .when()
-                .post("/api/v1/courier")
+        String login = "affff";
+        String password = null;
+        String firstName = "Boris";
+
+        Response response = steps.createCourier(login, password, firstName);
+
+        response
                 .then()
                 .statusCode(400)
                 .body("message", equalTo("Недостаточно данных для создания учетной записи"));
     }
 
     @Test
-    @Step("Проверка ошибки при создании курьера без обязательного поля имени")
+    @DisplayName("Проверка ошибки при создании курьера без обязательного поля имени")
     public void testCreateCourierWithoutFirstName(){
 
-        Response response = given()
-                .header("Content-type", "application/json")
-                .body("{\n" +
-                        "    \"login\": \"aufauf\",\n" +
-                        "    \"password\": \"1234\"\n" +
-                        "}")
-                .when()
-                .post("/api/v1/courier");
+        String login = "aufauf";
+        String password = "1234";
+        String firstName = "null";
+
+        Response response = steps.createCourier(login, password, firstName);
 
         response.then()
-                .statusCode(409)
+                .statusCode(400)
                 .body("message", equalTo("Недостаточно данных для создания учетной записи"));
-        }
+    }
 
     }
 

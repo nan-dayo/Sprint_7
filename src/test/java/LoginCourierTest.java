@@ -1,92 +1,84 @@
-import io.qameta.allure.Step;
-import io.restassured.RestAssured;
+import io.qameta.allure.junit4.DisplayName;
 import io.restassured.response.Response;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 
-public class LoginCourierTest {
+import static org.hamcrest.Matchers.*;
 
+public class LoginCourierTest extends BaseURI{
+
+    private final CourierSteps steps = new CourierSteps();
     private Integer courierId;
-    Steps step = new Steps();
-
-    @Before
-    public void setUp(){
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/";
-        courierId = step.createCourier("starrr", "1234", "name");
-    }
+    private String login = "wowowow";
+    private String password = "1234";
+    private String firstName = "anne";
 
     @After
     public void tearDown() {
+
         if (courierId != null) {
-            step.deleteCourier(courierId);
+            steps.deleteCourier(courierId);
         }
     }
 
-
     @Test
-    @Step("Проверка успешной авторизации в системе и получения id курьера в ответе")
-    public void testLoginCourierReturnsId() {
-        Response response = step.loginCourier("starrr", "1234");
+    @DisplayName("Успешная авторизация курьера с корректными данными и получение id в ответе")
+    public void testSuccessfulAuthorization() {
+        steps.createCourier(login, password, firstName);
+
+        Response response = steps.loginCourier(login, password);
 
         response.then()
                 .statusCode(200)
-                .body("id", is(courierId));
-
+                .body("id", notNullValue());
+        courierId = response.jsonPath().getInt("id");
     }
 
     @Test
-    @Step("Проверка ошибки при авторизации без логина")
-    public void testLoginWithoutLogin(){
-        given()
-                .header("Content-type", "application/json")
-                .body("{\"password\": \"1234\"}")
-                .when()
-                .post("/api/v1/courier/login")
-                .then()
-                .statusCode(400)
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
-    }
+    @DisplayName("Ошибка при авторизации с неверным логином")
+    public void testAuthorizationWithInvalidLogin() {
+        steps.createCourier(login, password, firstName);
 
-    @Test
-    @Step("Проверка ошибки при авторизации без пароля")
-    public void testLoginWithoutPassword(){
-        given()
-                .header("Content-type", "application/json")
-                .body("{\"login\": \"starrrr\"}")
-                .when()
-                .post("/api/v1/courier/login")
-                .then()
-                .statusCode(400)
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
-    }
+        Response response = steps.loginCourier("invalidLogin", password);
 
-    @Test
-    @Step("Проверка ошибки при неправильном логине")
-    public void testLoginWithInvalidLogin() {
-        given()
-                .header("Content-type", "application/json")
-                .body("{\"login\": \"sssstarrrr\", \"password\": \"1234\"}")
-                .when()
-                .post("/api/v1/courier/login")
-                .then()
+        response.then()
                 .statusCode(404)
                 .body("message", equalTo("Учетная запись не найдена"));
     }
 
     @Test
-    @Step("Проверка ошибки при неправильном пароле")
-    public void testLoginWithInvalidPassword() {
-        given()
-                .header("Content-type", "application/json")
-                .body("{\"login\": \"starrr\", \"password\": \"4321\"}")
-                .when()
-                .post("/api/v1/courier/login")
-                .then()
+    @DisplayName("Ошибка при авторизации с неверным паролем")
+    public void testAuthorizationWithInvalidPassword() {
+        steps.createCourier(login, password, firstName);
+
+        Response response = steps.loginCourier(login, "wrongPassword");
+
+        response.then()
                 .statusCode(404)
                 .body("message", equalTo("Учетная запись не найдена"));
+    }
+
+    @Test
+    @DisplayName("Ошибка при авторизации без логина")
+    public void testAuthorizationWithoutLogin() {
+        steps.createCourier(login, password, firstName);
+
+        Response response = steps.loginCourier(null, password);
+
+        response.then()
+                .statusCode(400)
+                .body("message", equalTo("Недостаточно данных для входа"));
+    }
+
+    @Test
+    @DisplayName("Ошибка при авторизации без пароля")
+    public void testAuthorizationWithoutPassword() {
+        steps.createCourier(login, password, firstName);
+
+        Response response = steps.loginCourier(login, null);
+
+        response.then()
+                .statusCode(400)
+                .body("message", equalTo("Недостаточно данных для входа"));
     }
 }

@@ -1,21 +1,15 @@
-import io.qameta.allure.Step;
-import io.restassured.RestAssured;
+import io.qameta.allure.junit4.DisplayName;
 import io.restassured.response.Response;
-import org.junit.Before;
 import org.junit.Test;
 import static org.hamcrest.Matchers.*;
 
-public class GetOrderListTest {
 
-    Steps step = new Steps();
+public class GetOrderListTest extends BaseURI{
 
-    @Before
-    public void setUp(){
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/";
-    }
+    OrderSteps step = new OrderSteps();
 
     @Test
-    @Step("Проверка списка заказов")
+    @DisplayName("Проверка списка заказов")
     public void testGetOrders() {
         Response response = step.getOrders();
 

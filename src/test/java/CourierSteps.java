@@ -1,53 +1,53 @@
-import com.google.gson.Gson;
 import io.qameta.allure.Step;
 import io.restassured.response.Response;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.is;
 
 public class CourierSteps {
 
+    String CREATE_COURIER_URL = "/api/v1/courier";
+    String LOGIN_COURIER_URL = "/api/v1/courier/login";
+
+
+
     @Step("Создать курьера с параметрами: login={login}, password={password}, firstName={firstName}")
-    public Integer createCourier(String login, String password, String firstName) {
-        String requestBody = "{\n" +
-                "    \"login\": \"" + login + "\",\n" +
-                "    \"password\": \"" + password + "\",\n" +
-                "    \"firstName\": \"" + firstName + "\"\n" +
-                "}";
+    public Response createCourier(String login, String password, String firstName) {
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("login", login);
+        requestBody.put("password", password);
+        requestBody.put("firstName", firstName);
 
         Response response = given()
-                .header("Content-type", "application/json")
+                .header("Content-Type", "application/json")
                 .body(requestBody)
                 .when()
-                .post("/api/v1/courier");
+                .post(CREATE_COURIER_URL);
 
-        response.then().statusCode(201).body("ok", is(true));
-
-        Response loginResponse = loginCourier(login, password);
-        return loginResponse.jsonPath().getInt("id");
+        return response;
     }
 
-    @Step("Удалить курьера с ID={courierId}")
+    @Step("Удалить курьера по ID")
     public void deleteCourier(int courierId) {
         given()
+                .header("Content-Type", "application/json")
                 .when()
-                .delete("/api/v1/courier/" + courierId)
+                .delete(CREATE_COURIER_URL + "/" + courierId)
                 .then()
                 .statusCode(200);
     }
 
-    @Step("Войти как курьер с логином={login} и паролем={password}")
+    @Step("Авторизовать курьера с логином: {login} и паролем: {password}")
     public Response loginCourier(String login, String password) {
-        String loginRequest = "{\n" +
-                "    \"login\": \"" + login + "\",\n" +
-                "    \"password\": \"" + password + "\"\n" +
-                "}";
+        Map<String, String> loginData = new HashMap<>();
+        loginData.put("login", login);
+        loginData.put("password", password);
 
         return given()
-                .header("Content-type", "application/json")
-                .body(loginRequest)
+                .header("Content-Type", "application/json")
+                .body(loginData)
                 .when()
-                .post("/api/v1/courier/login");
+                .post(LOGIN_COURIER_URL);
     }
 
 
