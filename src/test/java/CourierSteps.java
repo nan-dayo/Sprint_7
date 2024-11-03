@@ -5,7 +5,7 @@ import java.util.List;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 
-public class Steps {
+public class CourierSteps {
 
     @Step("Создать курьера с параметрами: login={login}, password={password}, firstName={firstName}")
     public Integer createCourier(String login, String password, String firstName) {
@@ -50,36 +50,6 @@ public class Steps {
                 .post("/api/v1/courier/login");
     }
 
-    @Step("Создать заказ")
-    public Response createOrder(List<String> color) {
 
-        String colorJson = new Gson().toJson(color);
-
-        String requestBody = "{\n" +
-                "    \"firstName\": \"Dean\",\n" +
-                "    \"lastName\": \"Winchester\",\n" +
-                "    \"address\": \"San Jose, 525\",\n" +
-                "    \"metroStation\": 4,\n" +
-                "    \"phone\": \"+7 911 0123 45 67\",\n" +
-                "    \"rentTime\": 5,\n" +
-                "    \"deliveryDate\": \"2024-11-06\",\n" +
-                "    \"comment\": \"Marshmallow nachos\",\n" +
-                "    \"color\": " + colorJson + "\n" +
-                "}";
-
-        return given()
-                .header("Content-type", "application/json")
-                .body(requestBody)
-                .when()
-                .post("/api/v1/orders");
-    }
-
-    @Step("Получение списка заказов")
-    public Response getOrders(){
-        return given()
-                .header("Content-type", "application/json")
-                .when()
-                .get("/api/v1/orders");
-    }
 
 }
